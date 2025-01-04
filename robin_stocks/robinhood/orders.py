@@ -1078,6 +1078,38 @@ def order_buy_option_limit(positionEffect, creditOrDebit, price, symbol, quantit
     return(data)
 
 
+def order_buy_option_market(positionEffect, creditOrDebit, symbol, quantity, expirationDate, strike, optionType='both', account_number=None, timeInForce='gtc', jsonify=True):
+    try:
+        symbol = symbol.upper().strip()
+    except AttributeError as message:
+        print(message, file=get_output())
+        return None
+
+    optionID = id_for_option(symbol, expirationDate, strike, optionType)
+
+    payload = {
+        'account': load_account_profile(account_number=account_number, info='url'),
+        'direction': creditOrDebit,
+        'time_in_force': timeInForce,
+        'legs': [
+            {'position_effect': positionEffect, 'side': 'buy',
+                'ratio_quantity': 1, 'option': option_instruments_url(optionID)},
+        ],
+        'type': 'market',
+        'trigger': 'immediate',
+        'quantity': quantity,
+        'override_day_trade_checks': False,
+        'override_dtbp_checks': False,
+        'ref_id': str(uuid4()),
+    }
+
+    url = option_orders_url(account_number=account_number)
+    # print(payload)
+    data = request_post(url, payload, json=True, jsonify_data=jsonify)
+
+    return(data)
+
+
 @login_required
 def order_buy_option_stop_limit(positionEffect, creditOrDebit, limitPrice, stopPrice, symbol, quantity, expirationDate, strike, optionType='both', account_number=None, timeInForce='gtc', jsonify=True):
     """Submits a stop order to be turned into a limit order once a certain stop price is reached.
