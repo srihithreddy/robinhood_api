@@ -1209,6 +1209,38 @@ def order_sell_option_stop_limit(positionEffect, creditOrDebit, limitPrice, stop
     return(data)
 
 
+def order_sell_option_stop_loss(positionEffect, creditOrDebit, stopPrice, symbol, quantity, expirationDate, strike, optionType='both', account_number=None, timeInForce='gtc', jsonify=True):
+    try:
+        symbol = symbol.upper().strip()
+    except AttributeError as message:
+        print(message, file=get_output())
+        return None
+
+    optionID = id_for_option(symbol, expirationDate, strike, optionType)
+
+    payload = {
+        'account': load_account_profile(account_number=account_number, info='url'),
+        'direction': creditOrDebit,
+        'time_in_force': timeInForce,
+        'legs': [
+            {'position_effect': positionEffect, 'side': 'sell',
+                'ratio_quantity': 1, 'option': option_instruments_url(optionID)},
+        ],
+        'type': 'market',
+        'trigger': 'stop',
+        'stop_price': stopPrice,
+        'quantity': quantity,
+        'override_day_trade_checks': False,
+        'override_dtbp_checks': False,
+        'ref_id': str(uuid4()),
+    }
+
+    url = option_orders_url(account_number=account_number)
+    data = request_post(url, payload, json=True, jsonify_data=jsonify)
+
+    return(data)
+
+
 @login_required
 def order_sell_option_limit(positionEffect, creditOrDebit, price, symbol, quantity, expirationDate, strike, optionType='both', account_number=None, timeInForce='gtc', jsonify=True):
     """Submits a limit order for an option. i.e. place a short call or a short put.
